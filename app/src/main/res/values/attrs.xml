@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <declare-styleable name="ProgressView">
+        <attr name="progressReachedColor" format="color"></attr>
+        <attr name="progressNormalColor" format="color"></attr>
+        <attr name="progressTextColor" format="color"></attr>
+        <attr name="progressTextSize" format="dimension"></attr>
+        <attr name="movePointColor" format="color"></attr>
+        <attr name="isShowProgressText" format="boolean"></attr>
+    </declare-styleable>
+</resources>

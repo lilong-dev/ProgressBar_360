@@ -3,6 +3,7 @@ package com.ll.progressbar.view;
 import android.animation.Animator;
 import android.animation.ValueAnimator;
 import android.content.Context;
+import android.content.res.Configuration;
 import android.content.res.TypedArray;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
@@ -11,6 +12,8 @@ import android.graphics.Paint;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffXfermode;
 import android.graphics.drawable.Drawable;
+import android.os.Bundle;
+import android.os.Parcelable;
 import android.util.AttributeSet;
 import android.util.Log;
 import android.view.View;
@@ -54,8 +57,7 @@ public class ProgressView extends View {
     private String progressText;//绘制的文本
 
     private Drawable mRotateDrawable;
-   private Point currentPoint;
-    private boolean isDrawRect;//是否已绘制完圆角矩形
+     private Point currentPoint;
     private boolean isAnimateEnd;
     private boolean isShowProgressText;//是否显示进度值
     public ProgressView(Context context, AttributeSet attrs) {
@@ -63,22 +65,23 @@ public class ProgressView extends View {
     }
 
     public ProgressView(Context context) {
-        this(context,null);
+        this(context, null);
     }
 
     public ProgressView(Context context, AttributeSet attrs, int defStyleAttr) {
         super(context, attrs, defStyleAttr);
         //获取属性值
-        TypedArray ta  = context.obtainStyledAttributes(attrs, R.styleable.ProgressView,defStyleAttr,0);
+        TypedArray ta  = context.obtainStyledAttributes(attrs, R.styleable.ProgressView, defStyleAttr, 0);
         progressNormalColor = ta.getColor(R.styleable.ProgressView_progressNormalColor,DEFAULT_NORMAL_COLOR);
         progressReachedColor = ta.getColor(R.styleable.ProgressView_progressReachedColor,DEFAULT_REACHED_COLOR);
-        progressTextColor = ta.getColor(R.styleable.ProgressView_progressTextColor,DEFAULT_PROGRESSTEXT_COLOR);
-        progressTextSize = ta.getDimensionPixelSize(R.styleable.ProgressView_progressTextSize,DpUtil.sp2px(context,14));
-        movePointColor = ta.getColor(R.styleable.ProgressView_movePointColor,DEFAULT_REACHED_COLOR);
-        isShowProgressText = ta.getBoolean(R.styleable.ProgressView_isShowProgressText,true);
+        progressTextColor = ta.getColor(R.styleable.ProgressView_progressTextColor, DEFAULT_PROGRESSTEXT_COLOR);
+        progressTextSize = ta.getDimensionPixelSize(R.styleable.ProgressView_progressTextSize, DpUtil.sp2px(context, 14));
+        movePointColor = ta.getColor(R.styleable.ProgressView_movePointColor, DEFAULT_REACHED_COLOR);
+        isShowProgressText = ta.getBoolean(R.styleable.ProgressView_isShowProgressText, true);
         ta.recycle();
 
         mRotateDrawable = getContext().getResources().getDrawable(R.mipmap.ic_rotate);
+        this.init();
     }
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
@@ -107,13 +110,15 @@ public class ProgressView extends View {
                 viewWidth = ScreenUtil.getScreenWidth(getContext());
                 break;
         }
-        setMeasuredDimension((int)viewWidth,(int)viewHeight);
+        setMeasuredDimension((int) viewWidth, (int) viewHeight);
+        if(progressBitmap == null){
+            progressBitmap = Bitmap.createBitmap((int)viewWidth,(int)viewHeight, Bitmap.Config.ARGB_8888);
+            mCanvas = new Canvas(progressBitmap);
+        }
 
-        this.init();
     }
 
     private void init() {
-
         mPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
         progressPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
         progressTextPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
@@ -129,8 +134,7 @@ public class ProgressView extends View {
         movePointPaint.setStyle(Paint.Style.FILL);
         movePointPaint.setColor(movePointColor);
 
-        progressBitmap = Bitmap.createBitmap((int)viewWidth,(int)viewHeight, Bitmap.Config.ARGB_8888);
-        mCanvas = new Canvas(progressBitmap);
+
 
     }
 
@@ -138,10 +142,7 @@ public class ProgressView extends View {
     protected void onDraw(Canvas canvas) {
         super.onDraw(canvas);
         //绘制圆角矩形
-        if(!isDrawRect){
-            mCanvas.drawRoundRect(0,0,viewWidth,viewHeight,viewHeight / 2,viewHeight / 2,mPaint);
-            isDrawRect = true;
-        }
+        mCanvas.drawRoundRect(0, 0, viewWidth, viewHeight, viewHeight / 2, viewHeight / 2, mPaint);
         //绘制进度
         this.drawProgress(canvas);
         //绘制文本
@@ -220,7 +221,7 @@ public class ProgressView extends View {
         progressTextStartX  = viewWidth / 2f- textWidth / 2f;
         Paint.FontMetrics fm = progressTextPaint.getFontMetrics();
         float baseLine = viewHeight / 2f - fm.descent + (fm.bottom-fm.top) / 2f;
-        canvas.drawText(progressText,progressTextStartX,baseLine,progressTextPaint);
+        canvas.drawText(progressText, progressTextStartX, baseLine, progressTextPaint);
     }
 
     /**
@@ -230,9 +231,9 @@ public class ProgressView extends View {
     private void drawProgress(Canvas canvas) {
         progressStartX = progress * viewWidth / maxProgress;
         progressPaint.setXfermode(mMode);
-        mCanvas.drawRect(0,0,progressStartX,viewHeight,progressPaint);
+        mCanvas.drawRect(0, 0, progressStartX, viewHeight, progressPaint);
         progressPaint.setXfermode(null);
-        canvas.drawBitmap(progressBitmap,0,0,null);
+        canvas.drawBitmap(progressBitmap, 0, 0, null);
     }
 
     private void startMove() {
@@ -271,8 +272,22 @@ public class ProgressView extends View {
     }
 
     public void setProgress(int progress){
-        this.progress = progress;
-        postInvalidate();
+        if (progress <= getMaxProgress() && progress >= 0) {
+            this.progress = progress;
+            postInvalidate();
+        }
+
+    }
+    public int getProgress(){
+        return this.progress;
+    }
+    public int getMaxProgress(){
+        return this.maxProgress;
+    }
+    public void incrementProgressBy(int by) {
+        if (by > 0) {
+            setProgress(getProgress() + by);
+        }
     }
     /**
      * createPoint()创建Point对象
@@ -283,5 +298,25 @@ public class ProgressView extends View {
 
     public Point createPoint(float x,float y){
         return new Point(x,y);
+    }
+
+    @Override
+    protected Parcelable onSaveInstanceState() {
+        final Bundle bundle = new Bundle();
+        bundle.putParcelable("savedInstance", super.onSaveInstanceState());
+        bundle.putInt("currentProgress", getProgress());
+        return bundle;
+    }
+
+    @Override
+    protected void onRestoreInstanceState(Parcelable state) {
+        if (state instanceof Bundle) {
+            final Bundle bundle = (Bundle) state;
+            Log.e("TAG",""+bundle.getInt("currentProgress"));
+            setProgress(bundle.getInt("currentProgress"));
+           super.onRestoreInstanceState(bundle.getParcelable("savedInstance"));
+            return;
+        }
+        super.onRestoreInstanceState(state);
     }
 }

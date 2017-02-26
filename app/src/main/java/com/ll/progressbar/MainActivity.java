@@ -29,14 +29,13 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void handleMessage(Message msg) {
                 super.handleMessage(msg);
-                if(progress == 100){
+                if(mProgressBar1.getProgress() == mProgressBar1.getMaxProgress()){
                     mHandler.removeMessages(0);
                     return;
                 }
-                progress++;
-                mProgressBar.setProgress(progress);
-                mProgressBar1.setProgress(progress);
-                mProgressBar2.setProgress(progress);
+                mProgressBar.incrementProgressBy(1);
+                mProgressBar1.incrementProgressBy(1);
+                mProgressBar2.incrementProgressBy(1);
                 mHandler.sendEmptyMessageDelayed(0,200);
             }
         };
